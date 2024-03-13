@@ -27,9 +27,7 @@ spec:
         - name: container-image
           value: build-harbor.alauda.cn/ait/cluster-api
         - name: container-image-tag
-          value: $(params.capi-image-tag)-$(build.git.version.docker)
-        - name: dockerfile
-          value: ./Dockerfile
+          value: $(params.capi-image-tag)-$(build.git.version)
         - name: labels
           value:
             - branch=$(build.git.branch.name)
