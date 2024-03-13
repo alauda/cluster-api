@@ -16,10 +16,7 @@
 
 # Build the manager binary
 # Run this with docker build --build-arg builder_image=<golang:x.y.z>
-ARG builder_image
-
-# Build architecture
-ARG ARCH
+ARG builder_image=build-harbor.alauda.cn/ait/golang:1.20-bullseye
 
 # Ignore Hadolint rule "Always tag the version of an image explicitly."
 # It's an invalid finding since the image is explicitly set in the Makefile.
@@ -52,18 +49,17 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Build
 ARG package=.
-ARG ARCH
 ARG ldflags
 
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
+    CGO_ENABLED=0 GOOS=linux \
     go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
 # Production image
-FROM gcr.io/distroless/static:nonroot-${ARCH}
+FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
 # Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies

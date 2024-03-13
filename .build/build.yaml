@@ -1,0 +1,75 @@
+apiVersion: builds.katanomi.dev/v1alpha1
+kind: Build
+spec:
+  workspaces:
+    - description: |
+        This workspace is shared among all the pipeline tasks to read/write common resources
+      name: source
+  params:
+    - name: capi-branch
+      type: string
+      default: v1.5.1-alauda.1
+    - name: capi-image-tag
+      type: string
+      default: v1.5.1-alauda.1
+  tasks:
+    - name: capi-image
+      timeout: 60m
+      retries: 1
+      taskRef:
+        kind: ClusterTask
+        name: alauda-build-image
+      workspaces:
+        - name: source
+          workspace: source
+      when: []
+      params:
+        - name: container-image
+          value: build-harbor.alauda.cn/ait/cluster-api
+        - name: container-image-tag
+          value: $(params.capi-image-tag)-$(build.git.version.docker)
+        - name: dockerfile
+          value: ./Dockerfile
+        - name: labels
+          value:
+            - branch=$(build.git.branch.name)
+            - commit=$(build.git.lastCommit.id)
+  git:
+    options:
+      depth: 1
+      timeout: 10m
+      retries: 0
+      resources:
+        limits:
+          cpu: 200m
+          memory: 200Mi
+        requests:
+          cpu: 200m
+          memory: 200Mi
+  finally:
+    - name: release-tag
+      timeout: 30m
+      retries: 0
+      taskRef:
+        kind: ClusterTask
+        name: alauda-release-tag
+      workspaces:
+        - name: source
+          workspace: source
+      when:
+        - input: $(build.git.versionPhase)
+          operator: in
+          values:
+            - custom
+            - ga
+        - input: $(tasks.status)
+          operator: in
+          values:
+            - Succeed
+            - Completed
+      params:
+        - name: version
+          value: $(build.git.version.docker)
+  runTemplate:
+    spec:
+      taskRunSpecs: []
