@@ -122,10 +122,10 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0
+	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0
 	google.golang.org/appengine v1.6.7 // indirect
@@ -162,4 +162,9 @@ require (
 	k8s.io/component-helpers v0.27.2 // indirect
 	k8s.io/metrics v0.27.2 // indirect
 	sigs.k8s.io/kustomize/kustomize/v5 v5.0.1 // indirect
+)
+
+replace (
+	golang.org/x/crypto => golang.org/x/crypto v0.17.0
+	golang.org/x/net => golang.org/x/net v0.17.0
 )
