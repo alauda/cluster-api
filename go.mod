@@ -167,4 +167,5 @@ require (
 replace (
 	golang.org/x/crypto => golang.org/x/crypto v0.17.0
 	golang.org/x/net => golang.org/x/net v0.17.0
+	google.golang.org/protobuf => google.golang.org/protobuf v1.33.0
 )
