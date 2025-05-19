@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api
 
-go 1.22
+go 1.23.0
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
@@ -20,7 +20,6 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/google/gofuzz v1.2.0
-	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.8
 	github.com/pkg/errors v0.9.1
@@ -30,7 +29,6 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	go.etcd.io/etcd/api/v3 v3.5.9
 	go.etcd.io/etcd/client/v3 v3.5.9
-	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.10.0
 	google.golang.org/grpc v1.55.0
 	k8s.io/api v0.27.2
@@ -107,7 +105,6 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
-	github.com/rivo/uniseg v0.4.2 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
@@ -122,10 +119,10 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/term v0.30.0 // indirect
+	golang.org/x/text v0.23.0
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0
 	google.golang.org/appengine v1.6.7 // indirect
@@ -154,10 +151,12 @@ require (
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/lithammer/dedent v1.1.0 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	k8s.io/component-helpers v0.27.2 // indirect
 	k8s.io/metrics v0.27.2 // indirect
@@ -165,7 +164,7 @@ require (
 )
 
 replace (
-	golang.org/x/crypto => golang.org/x/crypto v0.31.0
-	golang.org/x/net => golang.org/x/net v0.33.0
+	golang.org/x/crypto => golang.org/x/crypto v0.35.0
+	golang.org/x/net => golang.org/x/net v0.38.0
 	google.golang.org/protobuf => google.golang.org/protobuf v1.33.0
 )
