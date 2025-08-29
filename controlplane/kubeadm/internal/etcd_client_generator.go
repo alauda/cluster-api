@@ -104,7 +104,7 @@ func (c *EtcdClientGenerator) forLeader(ctx context.Context, nodeNames []string)
 	for _, nodeName := range nodeNames {
 		cl, err := c.getLeaderClient(ctx, nodeName, nodes)
 		if err != nil {
-			if errors.Is(err, errEtcdNodeConnection) {
+			if strings.Contains(err.Error(), errEtcdNodeConnection.Error()) {
 				errs = append(errs, err)
 				continue
 			}
