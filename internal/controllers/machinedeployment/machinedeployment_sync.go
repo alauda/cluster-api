@@ -331,7 +331,7 @@ func (r *Reconciler) computeDesiredMachineSet(ctx context.Context, deployment *c
 	desiredMS.Spec.Template.Spec.NodeDeletionTimeout = deployment.Spec.Template.Spec.NodeDeletionTimeout
 	desiredMS.Spec.Template.Spec.NodeVolumeDetachTimeout = deployment.Spec.Template.Spec.NodeVolumeDetachTimeout
 	desiredMS.Spec.MachineNamingStrategy = deployment.Spec.MachineNamingStrategy
-
+	desiredMS.Spec.Template.Spec.Taints = deployment.Spec.Template.Spec.Taints
 	return desiredMS, nil
 }
 

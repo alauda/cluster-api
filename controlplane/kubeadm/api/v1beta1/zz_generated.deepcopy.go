@@ -21,6 +21,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -110,6 +111,13 @@ func (in *KubeadmControlPlaneMachineTemplate) DeepCopyInto(out *KubeadmControlPl
 		in, out := &in.NodeDeletionTimeout, &out.NodeDeletionTimeout
 		*out = new(v1.Duration)
 		**out = **in
+	}
+	if in.Taints != nil {
+		in, out := &in.Taints, &out.Taints
+		*out = make([]corev1.Taint, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 

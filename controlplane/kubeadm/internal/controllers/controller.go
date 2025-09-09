@@ -789,6 +789,7 @@ func (r *KubeadmControlPlaneReconciler) syncMachines(ctx context.Context, contro
 			m.Spec.NodeDrainTimeout = controlPlane.KCP.Spec.MachineTemplate.NodeDrainTimeout
 			m.Spec.NodeDeletionTimeout = controlPlane.KCP.Spec.MachineTemplate.NodeDeletionTimeout
 			m.Spec.NodeVolumeDetachTimeout = controlPlane.KCP.Spec.MachineTemplate.NodeVolumeDetachTimeout
+			m.Spec.Taints = controlPlane.KCP.Spec.MachineTemplate.Taints
 
 			if err := patchHelper.Patch(ctx, m); err != nil {
 				return err

@@ -511,6 +511,7 @@ func (r *Reconciler) syncMachines(ctx context.Context, s *scope) (ctrl.Result, e
 			m.Spec.NodeDrainTimeout = machineSet.Spec.Template.Spec.NodeDrainTimeout
 			m.Spec.NodeDeletionTimeout = machineSet.Spec.Template.Spec.NodeDeletionTimeout
 			m.Spec.NodeVolumeDetachTimeout = machineSet.Spec.Template.Spec.NodeVolumeDetachTimeout
+			m.Spec.Taints = machineSet.Spec.Template.Spec.Taints
 
 			// Set machine's up to date condition
 			if upToDateCondition != nil {
@@ -924,6 +925,7 @@ func (r *Reconciler) computeDesiredMachine(machineSet *clusterv1.MachineSet, exi
 	desiredMachine.Spec.NodeDrainTimeout = machineSet.Spec.Template.Spec.NodeDrainTimeout
 	desiredMachine.Spec.NodeDeletionTimeout = machineSet.Spec.Template.Spec.NodeDeletionTimeout
 	desiredMachine.Spec.NodeVolumeDetachTimeout = machineSet.Spec.Template.Spec.NodeVolumeDetachTimeout
+	desiredMachine.Spec.Taints = machineSet.Spec.Template.Spec.Taints
 
 	return desiredMachine, nil
 }

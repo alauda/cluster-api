@@ -465,6 +465,7 @@ func (r *KubeadmControlPlaneReconciler) computeDesiredMachine(kcp *controlplanev
 	desiredMachine.Spec.NodeDrainTimeout = kcp.Spec.MachineTemplate.NodeDrainTimeout
 	desiredMachine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.NodeDeletionTimeout
 	desiredMachine.Spec.NodeVolumeDetachTimeout = kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout
+	desiredMachine.Spec.Taints = kcp.Spec.MachineTemplate.Taints
 
 	if existingMachine != nil {
 		desiredMachine.Spec.InfrastructureRef = existingMachine.Spec.InfrastructureRef

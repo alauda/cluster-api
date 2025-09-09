@@ -437,6 +437,9 @@ func MachineTemplateDeepCopyRolloutFields(template *clusterv1.MachineTemplateSpe
 	templateCopy.Spec.NodeDeletionTimeout = nil
 	templateCopy.Spec.NodeVolumeDetachTimeout = nil
 
+	// Drop node taints values
+	templateCopy.Spec.Taints = nil
+
 	// Remove the version part from the references APIVersion field,
 	// for more details see issue #2183 and #2140.
 	// Remove namespace part of the ref, as it always correllates with current MD namespace
