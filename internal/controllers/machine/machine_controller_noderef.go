@@ -323,9 +323,14 @@ func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, 
 		_ = json.Unmarshal([]byte(taintsFromPreviousReconcileAnnotations), &taintsFromPreviousReconcile)
 	}
 	for _, taint := range newTaints {
-		if !taints.HasTaint(newNode.Spec.Taints, taint) {
-			taints.EnsureNodeTaint(newNode, taint)
-			hasTaintChanges = true
+		if exist := taints.FindTaint(newNode.Spec.Taints, taint); exist == nil || exist.Value != taint.Value {
+			if exist != nil {
+				taints.UpdateNodeTaint(newNode, taint)
+				hasTaintChanges = true
+			} else {
+				taints.EnsureNodeTaint(newNode, taint)
+				hasTaintChanges = true
+			}
 		}
 	}
 	for _, taint := range taintsFromPreviousReconcile {
