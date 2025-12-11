@@ -119,10 +119,10 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/text v0.23.0
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/text v0.31.0
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
@@ -155,15 +155,15 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	k8s.io/component-helpers v0.27.2 // indirect
 	k8s.io/metrics v0.27.2 // indirect
 	sigs.k8s.io/kustomize/kustomize/v5 v5.0.1 // indirect
 )
 
 replace (
-	golang.org/x/crypto => golang.org/x/crypto v0.35.0
+	golang.org/x/crypto => golang.org/x/crypto v0.45.0
 	golang.org/x/net => golang.org/x/net v0.38.0
 	golang.org/x/oauth2 => golang.org/x/oauth2 v0.27.0
 	google.golang.org/protobuf => google.golang.org/protobuf v1.33.0
