@@ -69,9 +69,9 @@ func (r *KubeadmControlPlaneReconciler) upgradeControlPlane(
 		return ctrl.Result{}, errors.Wrap(err, "failed to set role and role binding for kubeadm")
 	}
 
-	// Ensure kubeadm clusterRoleBinding for v1.29+ as per https://github.com/kubernetes/kubernetes/pull/121305
-	if err := workloadCluster.AllowClusterAdminPermissions(ctx, parsedVersion); err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "failed to set cluster-admin ClusterRoleBinding for kubeadm")
+	// Creates ClusterRoleBinding and ClusterRoles introduced by new versions of kubeadm.
+	if err := workloadCluster.EnsureKubeadmPermissions(ctx, parsedVersion); err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "failed to update control plane: failed to set cluster-admin ClusterRoleBinding for kubeadm")
 	}
 
 	kubeadmCMMutators := make([]func(*bootstrapv1.ClusterConfiguration), 0)
