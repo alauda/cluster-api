@@ -47,12 +47,31 @@ func HasTaint(taints []corev1.Taint, targetTaint corev1.Taint) bool {
 	return false
 }
 
+func FindTaint(taints []corev1.Taint, targetTaint corev1.Taint) *corev1.Taint {
+	for _, taint := range taints {
+		if taint.MatchTaint(&targetTaint) {
+			return taint.DeepCopy()
+		}
+	}
+	return nil
+}
+
 // EnsureNodeTaint makes sure the node has the Taint.
 // It returns true if the taints are modified, false otherwise.
 func EnsureNodeTaint(node *corev1.Node, taint corev1.Taint) bool {
 	if !HasTaint(node.Spec.Taints, taint) {
 		node.Spec.Taints = append(node.Spec.Taints, taint)
 		return true
+	}
+	return false
+}
+
+func UpdateNodeTaint(node *corev1.Node, taint corev1.Taint) bool {
+	for idx := range node.Spec.Taints {
+		if node.Spec.Taints[idx].MatchTaint(&taint) {
+			node.Spec.Taints[idx] = taint
+			return true
+		}
 	}
 	return false
 }

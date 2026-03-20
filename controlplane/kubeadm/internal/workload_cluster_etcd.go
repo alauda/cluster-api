@@ -135,7 +135,7 @@ func (w *Workload) removeMemberForNode(ctx context.Context, name string) error {
 }
 
 // ForwardEtcdLeadership forwards etcd leadership to the first follower.
-func (w *Workload) ForwardEtcdLeadership(ctx context.Context, machine *clusterv1.Machine, leaderCandidate *clusterv1.Machine) error {
+func (w *Workload) ForwardEtcdLeadership(ctx context.Context, machine *clusterv1.Machine, leaderCandidate *clusterv1.Machine, remediation bool) error {
 	if machine == nil || !machine.Status.NodeRef.IsDefined() {
 		return nil
 	}
@@ -154,6 +154,25 @@ func (w *Workload) ForwardEtcdLeadership(ctx context.Context, machine *clusterv1
 	for _, node := range nodes.Items {
 		nodeNames = append(nodeNames, node.Name)
 	}
+
+	if remediation {
+		availableClient, err := w.etcdClientGenerator.forFirstAvailableNode(ctx, nodeNames)
+		if err != nil {
+			return errors.Wrap(err, "failed to create etcd client")
+		}
+		defer availableClient.Close()
+
+		members, err := availableClient.Members(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to list etcd members using etcd client")
+		}
+
+		currentMember := etcdutil.MemberForName(members, machine.Status.NodeRef.Name)
+		if currentMember == nil || currentMember.ID == availableClient.LeaderID {
+			return ErrRemediationNodeIsEtcdLeader
+		}
+	}
+
 	etcdClient, err := w.etcdClientGenerator.forLeader(ctx, nodeNames)
 	if err != nil {
 		return errors.Wrap(err, "failed to create etcd client")
@@ -202,7 +221,7 @@ func (w *Workload) EtcdMembers(ctx context.Context) ([]string, error) {
 	for _, node := range nodes.Items {
 		nodeNames = append(nodeNames, node.Name)
 	}
-	etcdClient, err := w.etcdClientGenerator.forLeader(ctx, nodeNames)
+	etcdClient, err := w.etcdClientGenerator.forFirstAvailableNode(ctx, nodeNames)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etcd client")
 	}

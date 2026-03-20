@@ -42,6 +42,7 @@ import (
 	topologynames "sigs.k8s.io/cluster-api/internal/topology/names"
 	"sigs.k8s.io/cluster-api/util/container"
 	"sigs.k8s.io/cluster-api/util/secret"
+	utilvalidation "sigs.k8s.io/cluster-api/util/validation"
 	"sigs.k8s.io/cluster-api/util/version"
 )
 
@@ -100,6 +101,9 @@ func (webhook *KubeadmControlPlane) ValidateCreate(_ context.Context, obj runtim
 	allErrs := validateKubeadmControlPlaneSpec(spec, field.NewPath("spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(nil, &spec.KubeadmConfigSpec.ClusterConfiguration, field.NewPath("spec", "kubeadmConfigSpec", "clusterConfiguration"))...)
 	allErrs = append(allErrs, spec.KubeadmConfigSpec.Validate(true, field.NewPath("spec", "kubeadmConfigSpec"))...)
+	if len(k.Spec.MachineTemplate.Spec.Taints) > 0 {
+		allErrs = append(allErrs, utilvalidation.ValidateNodeTaints(k.Spec.MachineTemplate.Spec.Taints, field.NewPath("spec", "machineTemplate", "spec", "taints"))...)
+	}
 	if len(allErrs) > 0 {
 		return nil, apierrors.NewInvalid(clusterv1.GroupVersion.WithKind("KubeadmControlPlane").GroupKind(), k.Name, allErrs)
 	}
@@ -262,6 +266,9 @@ func (webhook *KubeadmControlPlane) ValidateUpdate(_ context.Context, oldObj, ne
 	allErrs = append(allErrs, validateClusterConfiguration(&oldK.Spec.KubeadmConfigSpec.ClusterConfiguration, &newK.Spec.KubeadmConfigSpec.ClusterConfiguration, field.NewPath("spec", "kubeadmConfigSpec", "clusterConfiguration"))...)
 	allErrs = append(allErrs, webhook.validateCoreDNSVersion(oldK, newK)...)
 	allErrs = append(allErrs, newK.Spec.KubeadmConfigSpec.Validate(true, field.NewPath("spec", "kubeadmConfigSpec"))...)
+	if len(newK.Spec.MachineTemplate.Spec.Taints) > 0 {
+		allErrs = append(allErrs, utilvalidation.ValidateNodeTaints(newK.Spec.MachineTemplate.Spec.Taints, field.NewPath("spec", "machineTemplate", "spec", "taints"))...)
+	}
 
 	if len(allErrs) > 0 {
 		return nil, apierrors.NewInvalid(clusterv1.GroupVersion.WithKind("KubeadmControlPlane").GroupKind(), newK.Name, allErrs)

@@ -417,6 +417,7 @@ func Convert_v1beta1_KubeadmControlPlaneMachineTemplate_To_v1beta2_KubeadmContro
 			}
 		}
 	}
+	out.Spec.Taints = in.Taints
 	out.Spec.Deletion.NodeDrainTimeoutSeconds = clusterv1.ConvertToSeconds(in.NodeDrainTimeout)
 	out.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = clusterv1.ConvertToSeconds(in.NodeVolumeDetachTimeout)
 	out.Spec.Deletion.NodeDeletionTimeoutSeconds = clusterv1.ConvertToSeconds(in.NodeDeletionTimeout)
@@ -435,6 +436,7 @@ func Convert_v1beta2_KubeadmControlPlaneMachineTemplate_To_v1beta1_KubeadmContro
 			}
 		}
 	}
+	out.Taints = in.Spec.Taints
 	out.NodeDrainTimeout = clusterv1.ConvertFromSeconds(in.Spec.Deletion.NodeDrainTimeoutSeconds)
 	out.NodeVolumeDetachTimeout = clusterv1.ConvertFromSeconds(in.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
 	out.NodeDeletionTimeout = clusterv1.ConvertFromSeconds(in.Spec.Deletion.NodeDeletionTimeoutSeconds)
@@ -445,6 +447,7 @@ func Convert_v1beta1_KubeadmControlPlaneTemplateMachineTemplate_To_v1beta2_Kubea
 	if err := autoConvert_v1beta1_KubeadmControlPlaneTemplateMachineTemplate_To_v1beta2_KubeadmControlPlaneTemplateMachineTemplate(in, out, s); err != nil {
 		return err
 	}
+	out.Spec.Taints = in.Taints
 	out.Spec.Deletion.NodeDrainTimeoutSeconds = clusterv1.ConvertToSeconds(in.NodeDrainTimeout)
 	out.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = clusterv1.ConvertToSeconds(in.NodeVolumeDetachTimeout)
 	out.Spec.Deletion.NodeDeletionTimeoutSeconds = clusterv1.ConvertToSeconds(in.NodeDeletionTimeout)
@@ -455,6 +458,7 @@ func Convert_v1beta2_KubeadmControlPlaneTemplateMachineTemplate_To_v1beta1_Kubea
 	if err := autoConvert_v1beta2_KubeadmControlPlaneTemplateMachineTemplate_To_v1beta1_KubeadmControlPlaneTemplateMachineTemplate(in, out, s); err != nil {
 		return err
 	}
+	out.Taints = in.Spec.Taints
 	out.NodeDrainTimeout = clusterv1.ConvertFromSeconds(in.Spec.Deletion.NodeDrainTimeoutSeconds)
 	out.NodeVolumeDetachTimeout = clusterv1.ConvertFromSeconds(in.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
 	out.NodeDeletionTimeout = clusterv1.ConvertFromSeconds(in.Spec.Deletion.NodeDeletionTimeoutSeconds)

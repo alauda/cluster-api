@@ -435,7 +435,7 @@ func TestForwardEtcdLeadership(t *testing.T) {
 					Client:              tt.k8sClient,
 					etcdClientGenerator: tt.etcdClientGenerator,
 				}
-				err := w.ForwardEtcdLeadership(ctx, tt.machine, tt.leaderCandidate)
+				err := w.ForwardEtcdLeadership(ctx, tt.machine, tt.leaderCandidate, false)
 				if tt.expectErr {
 					g.Expect(err).To(HaveOccurred())
 					return
@@ -470,7 +470,7 @@ func TestForwardEtcdLeadership(t *testing.T) {
 			}},
 			etcdClientGenerator: etcdClientGenerator,
 		}
-		err := w.ForwardEtcdLeadership(ctx, defaultMachine(), defaultMachine())
+		err := w.ForwardEtcdLeadership(ctx, defaultMachine(), defaultMachine(), false)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(fakeEtcdClient.MovedLeader).To(BeEquivalentTo(0))
 	})
@@ -541,7 +541,7 @@ func TestForwardEtcdLeadership(t *testing.T) {
 						Items: []corev1.Node{nodeNamed("leader-node"), nodeNamed("other-node"), nodeNamed("candidate-node")},
 					}},
 				}
-				err := w.ForwardEtcdLeadership(ctx, currentLeader, tt.leaderCandidate)
+				err := w.ForwardEtcdLeadership(ctx, currentLeader, tt.leaderCandidate, false)
 				if tt.expectErr {
 					g.Expect(err).To(HaveOccurred())
 					return

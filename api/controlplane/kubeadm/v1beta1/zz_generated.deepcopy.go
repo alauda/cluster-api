@@ -21,7 +21,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	corev1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -96,19 +97,26 @@ func (in *KubeadmControlPlaneMachineTemplate) DeepCopyInto(out *KubeadmControlPl
 		*out = make([]corev1beta1.MachineReadinessGate, len(*in))
 		copy(*out, *in)
 	}
+	if in.Taints != nil {
+		in, out := &in.Taints, &out.Taints
+		*out = make([]v1.Taint, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.NodeDrainTimeout != nil {
 		in, out := &in.NodeDrainTimeout, &out.NodeDrainTimeout
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.NodeVolumeDetachTimeout != nil {
 		in, out := &in.NodeVolumeDetachTimeout, &out.NodeVolumeDetachTimeout
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.NodeDeletionTimeout != nil {
 		in, out := &in.NodeDeletionTimeout, &out.NodeDeletionTimeout
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 }
@@ -273,19 +281,26 @@ func (in *KubeadmControlPlaneTemplateList) DeepCopyObject() runtime.Object {
 func (in *KubeadmControlPlaneTemplateMachineTemplate) DeepCopyInto(out *KubeadmControlPlaneTemplateMachineTemplate) {
 	*out = *in
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	if in.Taints != nil {
+		in, out := &in.Taints, &out.Taints
+		*out = make([]v1.Taint, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.NodeDrainTimeout != nil {
 		in, out := &in.NodeDrainTimeout, &out.NodeDrainTimeout
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.NodeVolumeDetachTimeout != nil {
 		in, out := &in.NodeVolumeDetachTimeout, &out.NodeVolumeDetachTimeout
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.NodeDeletionTimeout != nil {
 		in, out := &in.NodeDeletionTimeout, &out.NodeDeletionTimeout
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 }
@@ -383,7 +398,7 @@ func (in *KubeadmControlPlaneV1Beta2Status) DeepCopyInto(out *KubeadmControlPlan
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]v1.Condition, len(*in))
+		*out = make([]metav1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -457,7 +472,7 @@ func (in *RemediationStrategy) DeepCopyInto(out *RemediationStrategy) {
 	out.RetryPeriod = in.RetryPeriod
 	if in.MinHealthyPeriod != nil {
 		in, out := &in.MinHealthyPeriod, &out.MinHealthyPeriod
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 }

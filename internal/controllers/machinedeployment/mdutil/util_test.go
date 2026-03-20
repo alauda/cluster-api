@@ -223,6 +223,7 @@ func TestMachineTemplateUpToDate(t *testing.T) {
 	machineTemplateWithDifferentInPlaceMutableSpecFields.Spec.Deletion.NodeDrainTimeoutSeconds = ptr.To(int32(20))
 	machineTemplateWithDifferentInPlaceMutableSpecFields.Spec.Deletion.NodeDeletionTimeoutSeconds = ptr.To(int32(20))
 	machineTemplateWithDifferentInPlaceMutableSpecFields.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = ptr.To(int32(20))
+	machineTemplateWithDifferentInPlaceMutableSpecFields.Spec.Taints = []corev1.Taint{{Key: "foo", Effect: corev1.TaintEffectNoSchedule}}
 	machineTemplateWithDifferentInPlaceMutableSpecFields.Spec.MinReadySeconds = ptr.To[int32](20)
 
 	machineTemplateWithDifferentClusterName := machineTemplate.DeepCopy()

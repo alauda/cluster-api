@@ -76,3 +76,35 @@ func TestRemoveNodeTaint(t *testing.T) {
 		})
 	}
 }
+
+func TestFindTaint(t *testing.T) {
+	g := NewWithT(t)
+
+	target := corev1.Taint{Key: "taint1", Effect: corev1.TaintEffectNoSchedule}
+	found := FindTaint([]corev1.Taint{
+		target,
+		{Key: "taint2", Effect: corev1.TaintEffectNoExecute},
+	}, target)
+
+	g.Expect(found).ToNot(BeNil())
+	g.Expect(*found).To(Equal(target))
+	g.Expect(FindTaint([]corev1.Taint{{Key: "taint2", Effect: corev1.TaintEffectNoExecute}}, target)).To(BeNil())
+}
+
+func TestUpdateNodeTaint(t *testing.T) {
+	g := NewWithT(t)
+
+	node := &corev1.Node{Spec: corev1.NodeSpec{
+		Taints: []corev1.Taint{
+			{Key: "taint1", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			{Key: "taint2", Effect: corev1.TaintEffectNoExecute},
+		},
+	}}
+
+	g.Expect(UpdateNodeTaint(node, corev1.Taint{Key: "taint1", Value: "new", Effect: corev1.TaintEffectNoSchedule})).To(BeTrue())
+	g.Expect(node.Spec.Taints).To(BeComparableTo([]corev1.Taint{
+		{Key: "taint1", Value: "new", Effect: corev1.TaintEffectNoSchedule},
+		{Key: "taint2", Effect: corev1.TaintEffectNoExecute},
+	}))
+	g.Expect(UpdateNodeTaint(node, corev1.Taint{Key: "missing", Effect: corev1.TaintEffectNoSchedule})).To(BeFalse())
+}

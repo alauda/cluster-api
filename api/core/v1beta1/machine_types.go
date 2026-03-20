@@ -458,6 +458,18 @@ type MachineSpec struct {
 	// Defaults to 10 seconds.
 	// +optional
 	NodeDeletionTimeout *metav1.Duration `json:"nodeDeletionTimeout,omitempty"`
+
+	// The list of the taints to be applied to the corresponding Node in additive
+	// manner. This list will not overwrite any other taints added to the Node on
+	// an ongoing basis by other entities. These taints should be actively reconciled
+	// e.g. if you ask the machine controller to apply a taint and then manually remove
+	// the taint the machine controller will put it back) but not have the machine controller
+	// remove any taints
+	// +optional
+	// +listType=map
+	// +listMapKey=key
+	// +listMapKey=effect
+	Taints []corev1.Taint `json:"taints,omitempty"`
 }
 
 // MachineReadinessGate contains the type of a Machine condition to be used as a readiness gate.

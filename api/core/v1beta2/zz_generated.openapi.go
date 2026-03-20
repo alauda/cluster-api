@@ -5989,6 +5989,29 @@ func schema_cluster_api_api_core_v1beta2_MachineSpec(ref common.ReferenceCallbac
 							},
 						},
 					},
+					"taints": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"key",
+									"effect",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "taints is the list of the taints to be applied to the corresponding Node in additive manner. This list will not overwrite any other taints added to the Node on an ongoing basis by other entities. These taints should be actively reconciled e.g. if you ask the machine controller to apply a taint and then manually remove the taint the machine controller will put it back) but not have the machine controller remove any taints.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Taint"),
+									},
+								},
+							},
+						},
+					},
 					"deletion": {
 						SchemaProps: spec.SchemaProps{
 							Description: "deletion contains configuration options for Machine deletion.",
@@ -6001,7 +6024,7 @@ func schema_cluster_api_api_core_v1beta2_MachineSpec(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"sigs.k8s.io/cluster-api/api/core/v1beta2.Bootstrap", "sigs.k8s.io/cluster-api/api/core/v1beta2.ContractVersionedObjectReference", "sigs.k8s.io/cluster-api/api/core/v1beta2.MachineDeletionSpec", "sigs.k8s.io/cluster-api/api/core/v1beta2.MachineReadinessGate"},
+			"k8s.io/api/core/v1.Taint", "sigs.k8s.io/cluster-api/api/core/v1beta2.Bootstrap", "sigs.k8s.io/cluster-api/api/core/v1beta2.ContractVersionedObjectReference", "sigs.k8s.io/cluster-api/api/core/v1beta2.MachineDeletionSpec", "sigs.k8s.io/cluster-api/api/core/v1beta2.MachineReadinessGate"},
 	}
 }
 

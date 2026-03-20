@@ -95,6 +95,9 @@ const (
 	// AnnotationsFromMachineAnnotation is the annotation set on nodes to track the annotations that originated from machines.
 	AnnotationsFromMachineAnnotation = "cluster.x-k8s.io/annotations-from-machine"
 
+	// TaintsFromMachineAnnotation is the taints set on nodes to track the taints that originated from machines.
+	TaintsFromMachineAnnotation = "cluster.x-k8s.io/taints-from-machine"
+
 	// OwnerNameAnnotation is the annotation set on nodes identifying the owner name.
 	OwnerNameAnnotation = "cluster.x-k8s.io/owner-name"
 

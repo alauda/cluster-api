@@ -1199,7 +1199,7 @@ func TestPatchNode(t *testing.T) {
 				_ = env.CleanupAndWait(ctx, oldNode, machine, ms, md)
 			})
 
-			err := r.patchNode(ctx, env, oldNode, tc.newLabels, tc.newAnnotations, tc.machine)
+			err := r.patchNode(ctx, env, oldNode, tc.newLabels, tc.newAnnotations, nil, tc.machine)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			g.Eventually(func(g Gomega) {
@@ -1227,6 +1227,9 @@ func TestMultiplePatchNode(t *testing.T) {
 		expectedLabels            map[string]string
 		firstExpectedAnnotations  map[string]string
 		secondExpectedAnnotations map[string]string
+		newTaints                 []corev1.Taint
+		firstExpectedTaints       []corev1.Taint
+		secondExpectedTaints      []corev1.Taint
 	}{
 		{
 			name: "Managed annotations should not be in the tracking annotation when machine is synced to node multiple times",
@@ -1247,6 +1250,7 @@ func TestMultiplePatchNode(t *testing.T) {
 				clusterv1.MachineAnnotation:                "baz",
 				clusterv1.AnnotationsFromMachineAnnotation: "",
 				clusterv1.LabelsFromMachineAnnotation:      "",
+				clusterv1.TaintsFromMachineAnnotation:      "[{\"key\":\"node-role.kubernetes.io/master\",\"effect\":\"NoSchedule\"}]",
 			},
 			secondExpectedAnnotations: map[string]string{
 				clusterv1.ClusterNameAnnotation:            "foo",
@@ -1254,7 +1258,23 @@ func TestMultiplePatchNode(t *testing.T) {
 				clusterv1.MachineAnnotation:                "baz",
 				clusterv1.AnnotationsFromMachineAnnotation: "",
 				clusterv1.LabelsFromMachineAnnotation:      "",
+				clusterv1.TaintsFromMachineAnnotation:      "null",
 			},
+			newTaints: []corev1.Taint{{
+				Key:    "node-role.kubernetes.io/master",
+				Effect: corev1.TaintEffectNoSchedule,
+			}},
+			firstExpectedTaints: []corev1.Taint{{
+				Key:    "node.kubernetes.io/not-ready",
+				Effect: "NoSchedule",
+			}, {
+				Key:    "node-role.kubernetes.io/master",
+				Effect: corev1.TaintEffectNoSchedule,
+			}},
+			secondExpectedTaints: []corev1.Taint{{
+				Key:    "node.kubernetes.io/not-ready",
+				Effect: "NoSchedule",
+			}},
 		},
 		{
 			name: "User-managed annotations should be tracked through reconciles",
@@ -1277,6 +1297,7 @@ func TestMultiplePatchNode(t *testing.T) {
 				clusterv1.AnnotationsFromMachineAnnotation: "node.cluster.x-k8s.io/keep-this",
 				clusterv1.LabelsFromMachineAnnotation:      "",
 				"node.cluster.x-k8s.io/keep-this":          "foo",
+				clusterv1.TaintsFromMachineAnnotation:      "null",
 			},
 			secondExpectedAnnotations: map[string]string{
 				clusterv1.ClusterNameAnnotation:            "foo",
@@ -1285,7 +1306,16 @@ func TestMultiplePatchNode(t *testing.T) {
 				clusterv1.AnnotationsFromMachineAnnotation: "node.cluster.x-k8s.io/keep-this",
 				clusterv1.LabelsFromMachineAnnotation:      "",
 				"node.cluster.x-k8s.io/keep-this":          "foo",
+				clusterv1.TaintsFromMachineAnnotation:      "null",
 			},
+			firstExpectedTaints: []corev1.Taint{{
+				Key:    "node.kubernetes.io/not-ready",
+				Effect: "NoSchedule",
+			}},
+			secondExpectedTaints: []corev1.Taint{{
+				Key:    "node.kubernetes.io/not-ready",
+				Effect: "NoSchedule",
+			}},
 		},
 	}
 
@@ -1304,7 +1334,7 @@ func TestMultiplePatchNode(t *testing.T) {
 				_ = env.CleanupAndWait(ctx, oldNode, machine)
 			})
 
-			err := r.patchNode(ctx, env, oldNode, labels, tc.newAnnotations, machine)
+			err := r.patchNode(ctx, env, oldNode, labels, tc.newAnnotations, tc.newTaints, machine)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			newNode := &corev1.Node{}
@@ -1315,10 +1345,11 @@ func TestMultiplePatchNode(t *testing.T) {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(newNode.Annotations).To(Equal(tc.firstExpectedAnnotations))
+				g.Expect(newNode.Spec.Taints).To(Equal(tc.firstExpectedTaints))
 			}, 10*time.Second).Should(Succeed())
 
 			// Re-reconcile with the same metadata
-			err = r.patchNode(ctx, env, newNode, labels, tc.newAnnotations, machine)
+			err = r.patchNode(ctx, env, newNode, labels, tc.newAnnotations, nil, machine)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			g.Eventually(func(g Gomega) {
@@ -1327,6 +1358,7 @@ func TestMultiplePatchNode(t *testing.T) {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(gotNode.Annotations).To(Equal(tc.secondExpectedAnnotations))
+				g.Expect(gotNode.Spec.Taints).To(Equal(tc.secondExpectedTaints))
 			}, 10*time.Second).Should(Succeed())
 		})
 	}

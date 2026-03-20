@@ -4556,12 +4556,35 @@ func schema_cluster_api_api_core_v1beta1_MachineSpec(ref common.ReferenceCallbac
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
+					"taints": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"key",
+									"effect",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "The list of the taints to be applied to the corresponding Node in additive manner. This list will not overwrite any other taints added to the Node on an ongoing basis by other entities. These taints should be actively reconciled e.g. if you ask the machine controller to apply a taint and then manually remove the taint the machine controller will put it back) but not have the machine controller remove any taints",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Taint"),
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"clusterName", "bootstrap", "infrastructureRef"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/cluster-api/api/core/v1beta1.Bootstrap", "sigs.k8s.io/cluster-api/api/core/v1beta1.MachineReadinessGate"},
+			"k8s.io/api/core/v1.ObjectReference", "k8s.io/api/core/v1.Taint", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/cluster-api/api/core/v1beta1.Bootstrap", "sigs.k8s.io/cluster-api/api/core/v1beta1.MachineReadinessGate"},
 	}
 }
 

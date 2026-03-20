@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api/bootstrap/kubeadm/defaulting"
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/internal/util/compare"
+	utilvalidation "sigs.k8s.io/cluster-api/util/validation"
 )
 
 func (webhook *KubeadmControlPlaneTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -70,6 +71,9 @@ func (webhook *KubeadmControlPlaneTemplate) ValidateCreate(_ context.Context, ob
 	allErrs := validateKubeadmControlPlaneTemplateResourceSpec(spec, field.NewPath("spec", "template", "spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(nil, &spec.KubeadmConfigSpec.ClusterConfiguration, field.NewPath("spec", "template", "spec", "kubeadmConfigSpec", "clusterConfiguration"))...)
 	allErrs = append(allErrs, spec.KubeadmConfigSpec.Validate(true, field.NewPath("spec", "template", "spec", "kubeadmConfigSpec"))...)
+	if len(spec.MachineTemplate.Spec.Taints) > 0 {
+		allErrs = append(allErrs, utilvalidation.ValidateNodeTaints(spec.MachineTemplate.Spec.Taints, field.NewPath("spec", "template", "spec", "machineTemplate", "spec", "taints"))...)
+	}
 	// Validate the metadata of the KubeadmControlPlaneTemplateResource
 	allErrs = append(allErrs, k.Spec.Template.ObjectMeta.Validate(field.NewPath("spec", "template", "metadata"))...)
 	if len(allErrs) > 0 {
@@ -139,6 +143,9 @@ func validateKubeadmControlPlaneTemplateResourceSpec(s controlplanev1.KubeadmCon
 
 	// Validate the metadata of the MachineTemplate
 	allErrs = append(allErrs, s.MachineTemplate.ObjectMeta.Validate(pathPrefix.Child("machineTemplate", "metadata"))...)
+	if len(s.MachineTemplate.Spec.Taints) > 0 {
+		allErrs = append(allErrs, utilvalidation.ValidateNodeTaints(s.MachineTemplate.Spec.Taints, pathPrefix.Child("machineTemplate", "spec", "taints"))...)
+	}
 
 	return allErrs
 }

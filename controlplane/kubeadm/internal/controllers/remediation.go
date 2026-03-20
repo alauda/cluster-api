@@ -312,9 +312,10 @@ func (r *KubeadmControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.C
 				})
 				return ctrl.Result{}, nil
 			}
-			if err := workloadCluster.ForwardEtcdLeadership(ctx, machineToBeRemediated, etcdLeaderCandidate); err != nil {
-				log.Error(err, "Failed to move etcd leadership to candidate machine", "candidate", klog.KObj(etcdLeaderCandidate))
-				v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedV1Beta1Condition, clusterv1.RemediationFailedV1Beta1Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
+			forwardErr := workloadCluster.ForwardEtcdLeadership(ctx, machineToBeRemediated, etcdLeaderCandidate, true)
+			if forwardErr != nil && !errors.Is(forwardErr, internal.ErrRemediationNodeIsEtcdLeader) {
+				log.Error(forwardErr, "Failed to move etcd leadership to candidate machine", "candidate", klog.KObj(etcdLeaderCandidate))
+				v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedV1Beta1Condition, clusterv1.RemediationFailedV1Beta1Reason, clusterv1.ConditionSeverityError, "%s", forwardErr.Error())
 
 				conditions.Set(machineToBeRemediated, metav1.Condition{
 					Type:    clusterv1.MachineOwnerRemediatedCondition,
@@ -322,7 +323,11 @@ func (r *KubeadmControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.C
 					Reason:  controlplanev1.KubeadmControlPlaneMachineRemediationInternalErrorReason,
 					Message: "Please check controller logs for errors",
 				})
-				return ctrl.Result{}, err
+				return ctrl.Result{}, forwardErr
+			}
+
+			if errors.Is(forwardErr, internal.ErrRemediationNodeIsEtcdLeader) {
+				log.Info("Skipping etcd leadership forward, this is not the etcd leader", "machine", machineToBeRemediated.Name, "leader", etcdLeaderCandidate.Name)
 			}
 
 			// NOTE: etcd member removal will be performed by the kcp-cleanup hook after machine completes drain & all volumes are detached.

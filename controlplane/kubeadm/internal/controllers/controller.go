@@ -782,6 +782,7 @@ func (r *KubeadmControlPlaneReconciler) syncMachines(ctx context.Context, contro
 			m.Spec.Deletion.NodeDrainTimeoutSeconds = controlPlane.KCP.Spec.MachineTemplate.Spec.Deletion.NodeDrainTimeoutSeconds
 			m.Spec.Deletion.NodeDeletionTimeoutSeconds = controlPlane.KCP.Spec.MachineTemplate.Spec.Deletion.NodeDeletionTimeoutSeconds
 			m.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = controlPlane.KCP.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds
+			m.Spec.Taints = controlPlane.KCP.Spec.MachineTemplate.Spec.Taints
 
 			// Note: We intentionally don't set "minReadySeconds" on Machines because we consider it enough to have machine availability driven by readiness of control plane components.
 			if err := patchHelper.Patch(ctx, m); err != nil {
@@ -1205,7 +1206,7 @@ func (r *KubeadmControlPlaneReconciler) reconcilePreTerminateHook(ctx context.Co
 		// triggered in another way (e.g. a user running kubectl delete machine)
 		etcdLeaderCandidate := controlPlane.Machines.Filter(collections.Not(collections.HasDeletionTimestamp)).Newest()
 		if etcdLeaderCandidate != nil {
-			if err := workloadCluster.ForwardEtcdLeadership(ctx, deletingMachine, etcdLeaderCandidate); err != nil {
+			if err := workloadCluster.ForwardEtcdLeadership(ctx, deletingMachine, etcdLeaderCandidate, false); err != nil {
 				return ctrl.Result{}, errors.Wrapf(err, "failed to move leadership to candidate Machine %s", etcdLeaderCandidate.Name)
 			}
 		} else {

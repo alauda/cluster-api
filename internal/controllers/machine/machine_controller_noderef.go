@@ -18,6 +18,7 @@ package machine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -144,7 +145,7 @@ func (r *Reconciler) reconcileNode(ctx context.Context, s *scope) (ctrl.Result, 
 	_, nodeHadInterruptibleLabel := s.node.Labels[clusterv1.InterruptibleLabel]
 
 	// Reconcile node taints
-	if err := r.patchNode(ctx, remoteClient, s.node, nodeLabels, nodeAnnotations, machine); err != nil {
+	if err := r.patchNode(ctx, remoteClient, s.node, nodeLabels, nodeAnnotations, machine.Spec.Taints, machine); err != nil {
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Node %s", klog.KObj(s.node))
 	}
 	if !nodeHadInterruptibleLabel && interruptible {
@@ -247,7 +248,7 @@ func (r *Reconciler) getNode(ctx context.Context, c client.Reader, providerID st
 
 // PatchNode is required to workaround an issue on Node.Status.Address which is incorrectly annotated as patchStrategy=merge
 // and this causes SSA patch to fail in case there are two addresses with the same key https://github.com/kubernetes-sigs/cluster-api/issues/8417
-func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, node *corev1.Node, newLabels, newAnnotations map[string]string, m *clusterv1.Machine) error {
+func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, node *corev1.Node, newLabels, newAnnotations map[string]string, newTaints []corev1.Taint, m *clusterv1.Machine) error {
 	newNode := node.DeepCopy()
 
 	// Adds the annotations from the Machine.
@@ -313,6 +314,33 @@ func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, 
 		}
 	}
 
+	hasTaintChanges := false
+	taintsFromPreviousReconcile := []corev1.Taint{}
+	if taintsFromPreviousReconcileAnnotations, ok := newNode.Annotations[clusterv1.TaintsFromMachineAnnotation]; ok {
+		_ = json.Unmarshal([]byte(taintsFromPreviousReconcileAnnotations), &taintsFromPreviousReconcile)
+	}
+	for _, taint := range newTaints {
+		if exist := taints.FindTaint(newNode.Spec.Taints, taint); exist == nil || exist.Value != taint.Value {
+			if exist != nil {
+				taints.UpdateNodeTaint(newNode, taint)
+				hasTaintChanges = true
+			} else {
+				taints.EnsureNodeTaint(newNode, taint)
+				hasTaintChanges = true
+			}
+		}
+	}
+	for _, taint := range taintsFromPreviousReconcile {
+		if !taints.HasTaint(newTaints, taint) {
+			taints.RemoveNodeTaint(newNode, taint)
+			hasTaintChanges = true
+		}
+	}
+	finalTaintsFromCurrentReconcile, err := json.Marshal(newTaints)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal taints from machine %s", klog.KObj(m))
+	}
+
 	// drop the well known annotations before setting the value of AnnotationsFromMachineAnnotation so we're not double-accounting
 	// our own metadata
 	finalAnnotationsFromCurrentReconcile := []string{}
@@ -332,9 +360,10 @@ func (r *Reconciler) patchNode(ctx context.Context, remoteClient client.Client, 
 
 	annotations.AddAnnotations(newNode, map[string]string{clusterv1.LabelsFromMachineAnnotation: newLabelsFromMachine})
 	annotations.AddAnnotations(newNode, map[string]string{clusterv1.AnnotationsFromMachineAnnotation: finalAnnotationsFromMachine})
+	annotations.AddAnnotations(newNode, map[string]string{clusterv1.TaintsFromMachineAnnotation: string(finalTaintsFromCurrentReconcile)})
 
 	// Drop the NodeUninitializedTaint taint on the node given that we are reconciling labels.
-	hasTaintChanges := taints.RemoveNodeTaint(newNode, clusterv1.NodeUninitializedTaint)
+	hasTaintChanges = taints.RemoveNodeTaint(newNode, clusterv1.NodeUninitializedTaint) || hasTaintChanges
 
 	// Set Taint to a node in an old MachineSet and unset Taint from a node in a new MachineSet
 	isOutdated, notFound, err := shouldNodeHaveOutdatedTaint(ctx, r.Client, m)

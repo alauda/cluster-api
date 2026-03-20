@@ -3368,6 +3368,13 @@ func (in *MachineSpec) DeepCopyInto(out *MachineSpec) {
 		*out = make([]MachineReadinessGate, len(*in))
 		copy(*out, *in)
 	}
+	if in.Taints != nil {
+		in, out := &in.Taints, &out.Taints
+		*out = make([]corev1.Taint, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	in.Deletion.DeepCopyInto(&out.Deletion)
 }
 

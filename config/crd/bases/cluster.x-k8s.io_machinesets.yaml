@@ -1337,6 +1337,48 @@ spec:
                         x-kubernetes-list-map-keys:
                         - conditionType
                         x-kubernetes-list-type: map
+                      taints:
+                        description: |-
+                          The list of the taints to be applied to the corresponding Node in additive
+                          manner. This list will not overwrite any other taints added to the Node on
+                          an ongoing basis by other entities. These taints should be actively reconciled
+                          e.g. if you ask the machine controller to apply a taint and then manually remove
+                          the taint the machine controller will put it back) but not have the machine controller
+                          remove any taints
+                        items:
+                          description: |-
+                            The node this Taint is attached to has the "effect" on
+                            any pod that does not tolerate the Taint.
+                          properties:
+                            effect:
+                              description: |-
+                                Required. The effect of the taint on pods
+                                that do not tolerate the taint.
+                                Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
+                              type: string
+                            key:
+                              description: Required. The taint key to be applied to
+                                a node.
+                              type: string
+                            timeAdded:
+                              description: |-
+                                TimeAdded represents the time at which the taint was added.
+                                It is only written for NoExecute taints.
+                              format: date-time
+                              type: string
+                            value:
+                              description: The taint value corresponding to the taint
+                                key.
+                              type: string
+                          required:
+                          - effect
+                          - key
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - key
+                        - effect
+                        x-kubernetes-list-type: map
                       version:
                         description: |-
                           version defines the desired Kubernetes version.
@@ -1995,6 +2037,48 @@ spec:
                         type: array
                         x-kubernetes-list-map-keys:
                         - conditionType
+                        x-kubernetes-list-type: map
+                      taints:
+                        description: |-
+                          taints is the list of the taints to be applied to the corresponding Node in additive
+                          manner. This list will not overwrite any other taints added to the Node on
+                          an ongoing basis by other entities. These taints should be actively reconciled
+                          e.g. if you ask the machine controller to apply a taint and then manually remove
+                          the taint the machine controller will put it back) but not have the machine controller
+                          remove any taints.
+                        items:
+                          description: |-
+                            The node this Taint is attached to has the "effect" on
+                            any pod that does not tolerate the Taint.
+                          properties:
+                            effect:
+                              description: |-
+                                Required. The effect of the taint on pods
+                                that do not tolerate the taint.
+                                Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
+                              type: string
+                            key:
+                              description: Required. The taint key to be applied to
+                                a node.
+                              type: string
+                            timeAdded:
+                              description: |-
+                                TimeAdded represents the time at which the taint was added.
+                                It is only written for NoExecute taints.
+                              format: date-time
+                              type: string
+                            value:
+                              description: The taint value corresponding to the taint
+                                key.
+                              type: string
+                          required:
+                          - effect
+                          - key
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - key
+                        - effect
                         x-kubernetes-list-type: map
                       version:
                         description: |-

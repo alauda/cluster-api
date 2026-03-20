@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -496,6 +497,18 @@ type KubeadmControlPlaneMachineTemplateSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	ReadinessGates []clusterv1.MachineReadinessGate `json:"readinessGates,omitempty"`
+
+	// taints is the list of the taints to be applied to the corresponding Node in additive
+	// manner. This list will not overwrite any other taints added to the Node on
+	// an ongoing basis by other entities. These taints should be actively reconciled
+	// e.g. if you ask the machine controller to apply a taint and then manually remove
+	// the taint the machine controller will put it back) but not have the machine controller
+	// remove any taints.
+	// +optional
+	// +listType=map
+	// +listMapKey=key
+	// +listMapKey=effect
+	Taints []corev1.Taint `json:"taints,omitempty"`
 
 	// deletion contains configuration options for Machine deletion.
 	// +optional
