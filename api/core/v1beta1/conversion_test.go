@@ -54,6 +54,25 @@ func TestFuzzyConversion(t *testing.T) {
 		}
 		return "", fmt.Errorf("failed to map GroupKind %s to version", gk.String())
 	})
+	SetAPIGroupGetter(func(kind string) (string, error) {
+		var group string
+		for _, gvk := range testGVKs {
+			if gvk.Kind != kind {
+				continue
+			}
+			if group == "" {
+				group = gvk.Group
+				continue
+			}
+			if group != gvk.Group {
+				return "", fmt.Errorf("failed to map kind %s to a unique group", kind)
+			}
+		}
+		if group == "" {
+			return "", fmt.Errorf("failed to map kind %s to group", kind)
+		}
+		return group, nil
+	})
 
 	t.Run("for Cluster", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Hub:         &clusterv1.Cluster{},
@@ -90,6 +109,43 @@ func TestFuzzyConversion(t *testing.T) {
 		Spoke:       &MachinePool{},
 		FuzzerFuncs: []fuzzer.FuzzerFuncs{MachinePoolFuzzFuncs},
 	}))
+}
+
+func TestClusterConvertToInfersAPIGroupFromKind(t *testing.T) {
+	SetAPIGroupGetter(func(kind string) (string, error) {
+		if kind == "DockerCluster" {
+			return "infrastructure.cluster.x-k8s.io", nil
+		}
+		return "", fmt.Errorf("failed to map kind %s to group", kind)
+	})
+
+	src := &Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cluster-1",
+			Namespace: "default",
+		},
+		Spec: ClusterSpec{
+			InfrastructureRef: &corev1.ObjectReference{
+				Kind: "DockerCluster",
+				Name: "infra-1",
+			},
+		},
+	}
+	dst := &clusterv1.Cluster{}
+
+	if err := src.ConvertTo(dst); err != nil {
+		t.Fatalf("ConvertTo() failed: %v", err)
+	}
+
+	if dst.Spec.InfrastructureRef.APIGroup != "infrastructure.cluster.x-k8s.io" {
+		t.Fatalf("expected inferred apiGroup %q, got %q", "infrastructure.cluster.x-k8s.io", dst.Spec.InfrastructureRef.APIGroup)
+	}
+	if dst.Spec.InfrastructureRef.Kind != "DockerCluster" {
+		t.Fatalf("expected kind %q, got %q", "DockerCluster", dst.Spec.InfrastructureRef.Kind)
+	}
+	if dst.Spec.InfrastructureRef.Name != "infra-1" {
+		t.Fatalf("expected name %q, got %q", "infra-1", dst.Spec.InfrastructureRef.Name)
+	}
 }
 
 func ClusterFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {

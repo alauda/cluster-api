@@ -40,8 +40,16 @@ var apiVersionGetter = func(_ schema.GroupKind) (string, error) {
 	return "", errors.New("apiVersionGetter not set")
 }
 
+var apiGroupGetter = func(_ string) (string, error) {
+	return "", errors.New("apiGroupGetter not set")
+}
+
 func SetAPIVersionGetter(f func(gk schema.GroupKind) (string, error)) {
 	apiVersionGetter = f
+}
+
+func SetAPIGroupGetter(f func(kind string) (string, error)) {
+	apiGroupGetter = f
 }
 
 func (src *Cluster) ConvertTo(dstRaw conversion.Hub) error {
@@ -2260,6 +2268,13 @@ func convertToContractVersionedObjectReference(ref *corev1.ObjectReference) (clu
 			return clusterv1.ContractVersionedObjectReference{}, fmt.Errorf("failed to convert object: failed to parse apiVersion: %v", err)
 		}
 		apiGroup = gv.Group
+	}
+	if apiGroup == "" && ref.Kind != "" {
+		inferredAPIGroup, err := apiGroupGetter(ref.Kind)
+		if err != nil {
+			return clusterv1.ContractVersionedObjectReference{}, fmt.Errorf("failed to convert object: failed to infer apiGroup for kind %s: %v", ref.Kind, err)
+		}
+		apiGroup = inferredAPIGroup
 	}
 	return clusterv1.ContractVersionedObjectReference{
 		APIGroup: apiGroup,

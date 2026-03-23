@@ -781,9 +781,26 @@ func setupWebhooks(ctx context.Context, mgr ctrl.Manager, clusterCacheReader web
 	apiVersionGetter := func(gk schema.GroupKind) (string, error) {
 		return contract.GetAPIVersion(ctx, mgr.GetClient(), gk)
 	}
+	apiGroupGetter := func(kind string) (string, error) {
+		mappings, err := mgr.GetRESTMapper().RESTMappings(schema.GroupKind{Kind: kind})
+		if err != nil {
+			return "", err
+		}
+
+		groups := sets.New[string]()
+		for _, mapping := range mappings {
+			groups.Insert(mapping.GroupVersionKind.Group)
+		}
+		if len(groups) != 1 {
+			return "", fmt.Errorf("expected exactly 1 unique API group for kind %s, got %v", kind, sets.List(groups))
+		}
+
+		return sets.List(groups)[0], nil
+	}
 	clusterv1alpha3.SetAPIVersionGetter(apiVersionGetter)
 	clusterv1alpha4.SetAPIVersionGetter(apiVersionGetter)
 	clusterv1beta1.SetAPIVersionGetter(apiVersionGetter)
+	clusterv1beta1.SetAPIGroupGetter(apiGroupGetter)
 
 	// NOTE: ClusterClass and managed topologies are behind ClusterTopology feature gate flag; the webhook
 	// is going to prevent creating or updating new objects in case the feature flag is disabled.

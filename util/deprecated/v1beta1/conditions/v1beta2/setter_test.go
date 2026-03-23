@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
@@ -81,7 +82,14 @@ func TestSet(t *testing.T) {
 
 		condition := cloneCondition()
 		expected := []metav1.Condition{
-			foo.Status.V1Beta2.Conditions[0],
+			{
+				Type:               foo.Status.V1Beta2.Conditions[0].Type,
+				Status:             foo.Status.V1Beta2.Conditions[0].Status,
+				ObservedGeneration: foo.Status.V1Beta2.Conditions[0].ObservedGeneration,
+				LastTransitionTime: foo.Status.V1Beta2.Conditions[0].LastTransitionTime,
+				Reason:             NoReasonReported,
+				Message:            foo.Status.V1Beta2.Conditions[0].Message,
+			},
 			condition,
 		}
 
@@ -116,7 +124,14 @@ func TestSet(t *testing.T) {
 
 		condition := cloneCondition()
 		expected := []metav1.Condition{
-			foo.Status.Conditions[0],
+			{
+				Type:               foo.Status.Conditions[0].Type,
+				Status:             foo.Status.Conditions[0].Status,
+				ObservedGeneration: foo.Status.Conditions[0].ObservedGeneration,
+				LastTransitionTime: foo.Status.Conditions[0].LastTransitionTime,
+				Reason:             NoReasonReported,
+				Message:            foo.Status.Conditions[0].Message,
+			},
 			condition,
 		}
 
@@ -145,9 +160,23 @@ func TestSet(t *testing.T) {
 
 		condition := cloneCondition()
 		expected := []metav1.Condition{
-			foo.Status.Conditions[0],
+			{
+				Type:               foo.Status.Conditions[0].Type,
+				Status:             foo.Status.Conditions[0].Status,
+				ObservedGeneration: foo.Status.Conditions[0].ObservedGeneration,
+				LastTransitionTime: foo.Status.Conditions[0].LastTransitionTime,
+				Reason:             NoReasonReported,
+				Message:            foo.Status.Conditions[0].Message,
+			},
 			condition,
-			foo.Status.Conditions[1],
+			{
+				Type:               foo.Status.Conditions[1].Type,
+				Status:             foo.Status.Conditions[1].Status,
+				ObservedGeneration: foo.Status.Conditions[1].ObservedGeneration,
+				LastTransitionTime: foo.Status.Conditions[1].LastTransitionTime,
+				Reason:             NoReasonReported,
+				Message:            foo.Status.Conditions[1].Message,
+			},
 		}
 
 		Set(foo, condition)
@@ -212,6 +241,26 @@ func TestSet(t *testing.T) {
 		Set(foo, condition)
 		ltt3 := foo.Status.Conditions[0].LastTransitionTime.Time
 		g.Expect(ltt3).To(Equal(ltt3.Truncate(1*time.Second)), cmp.Diff(ltt3, ltt3.Truncate(1*time.Second)))
+	})
+
+	t.Run("Set normalizes existing empty reasons", func(t *testing.T) {
+		g := NewWithT(t)
+		foo := &builder.Phase3Obj{
+			Status: builder.Phase3ObjStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:               "existingCondition",
+						Status:             metav1.ConditionTrue,
+						LastTransitionTime: now,
+					},
+				},
+			},
+		}
+
+		Set(foo, cloneCondition())
+
+		g.Expect(meta.FindStatusCondition(foo.Status.Conditions, "existingCondition")).ToNot(BeNil())
+		g.Expect(meta.FindStatusCondition(foo.Status.Conditions, "existingCondition").Reason).To(Equal(NoReasonReported))
 	})
 }
 

@@ -99,6 +99,12 @@ func Set(targetObj Setter, condition metav1.Condition, opts ...SetOption) {
 }
 
 func setStatusCondition(conditions *[]metav1.Condition, condition metav1.Condition) bool {
+	for i := range *conditions {
+		if (*conditions)[i].Reason == "" {
+			(*conditions)[i].Reason = NoReasonReported
+		}
+	}
+
 	// Truncate last transition time to seconds.
 	// This prevents inconsistencies from what we have in objects in memory and what Marshal/Unmarshal
 	// will do while the data is sent to/read from the API server.
