@@ -325,6 +325,9 @@ func newEnvironment(managerCacheOptions cache.Options, uncachedObjs ...client.Ob
 	// Set minNodeStartupTimeout for Test, so it does not need to be at least 30s
 	internalwebhooks.SetMinNodeStartupTimeout(metav1.Duration{Duration: 1 * time.Millisecond})
 
+	if err := (&webhooks.ClusterNameLabel{Client: mgr.GetAPIReader()}).SetupWebhookWithManager(mgr); err != nil {
+		klog.Fatalf("unable to create webhook: %+v", err)
+	}
 	if err := (&webhooks.Cluster{Client: mgr.GetClient()}).SetupWebhookWithManager(mgr); err != nil {
 		klog.Fatalf("unable to create webhook: %+v", err)
 	}
