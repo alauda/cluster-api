@@ -149,6 +149,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - exp.cluster.x-k8s.io
+  resources:
+  - machinepools
+  verbs:
+  - get
+- apiGroups:
   - ipam.cluster.x-k8s.io
   resources:
   - ipaddressclaims

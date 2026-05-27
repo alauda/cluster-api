@@ -759,6 +759,11 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, watchNamespaces map
 }
 
 func setupWebhooks(mgr ctrl.Manager, clusterCacheReader webhooks.ClusterCacheReader) {
+	if err := (&webhooks.ClusterNameLabel{Client: mgr.GetAPIReader()}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "Unable to create webhook", "webhook", "ClusterNameLabel")
+		os.Exit(1)
+	}
+
 	// NOTE: ClusterClass and managed topologies are behind ClusterTopology feature gate flag; the webhook
 	// is going to prevent creating or updating new objects in case the feature flag is disabled.
 	if err := (&webhooks.ClusterClass{Client: mgr.GetClient()}).SetupWebhookWithManager(mgr); err != nil {

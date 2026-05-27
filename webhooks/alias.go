@@ -58,6 +58,18 @@ func (webhook *Cluster) DefaultAndValidateVariables(ctx context.Context, cluster
 	return webhooks.DefaultAndValidateVariables(ctx, cluster, oldCluster, clusterClass)
 }
 
+// ClusterNameLabel implements a mutating webhook for the cluster name label.
+type ClusterNameLabel struct {
+	Client client.Reader
+}
+
+// SetupWebhookWithManager sets up ClusterNameLabel webhooks.
+func (webhook *ClusterNameLabel) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	return (&webhooks.ClusterNameLabel{
+		Client: webhook.Client,
+	}).SetupWebhookWithManager(mgr)
+}
+
 // ClusterClass implements a validation and defaulting webhook for ClusterClass.
 type ClusterClass struct {
 	Client client.Reader
