@@ -55,6 +55,7 @@ import (
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/internal/contract"
 	"sigs.k8s.io/cluster-api/internal/controllers/machine/drain"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/cache"
@@ -172,7 +173,13 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 			handler.EnqueueRequestsFromMapFunc(mdToMachines),
 			builder.WithPredicates(predicates.ResourceIsChanged(mgr.GetScheme(), *r.predicateLog)),
 		).
-		Build(r)
+		Build(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+			mgr.GetAPIReader(),
+			"machine",
+			func() client.Object { return &clusterv1.Machine{} },
+			func(obj client.Object) string { return obj.(*clusterv1.Machine).Spec.ClusterName },
+			r,
+		))
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}
@@ -726,7 +733,7 @@ func (r *Reconciler) isDeleteNodeAllowed(ctx context.Context, cluster *clusterv1
 		providerID = *machine.Spec.ProviderID
 	} else if infraMachine != nil {
 		// Fallback to retrieve from infraMachine.
-		if providerIDFromInfraMachine, err := contract.InfrastructureMachine().ProviderID().Get(infraMachine); err == nil {
+		if providerIDFromInfraMachine, err := contract.InfrastructureMachine().ProviderID().Get(infraMachine); err == nil && providerIDFromInfraMachine != nil {
 			providerID = *providerIDFromInfraMachine
 		}
 	}

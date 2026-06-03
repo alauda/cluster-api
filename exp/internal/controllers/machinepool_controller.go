@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/internal/util/ssa"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/finalizers"
@@ -132,7 +133,13 @@ func (r *MachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.M
 			),
 		).
 		WatchesRawSource(r.ClusterCache.GetClusterSource("machinepool", clusterToMachinePools)).
-		Build(r)
+		Build(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+			mgr.GetAPIReader(),
+			"machinepool",
+			func() client.Object { return &expv1.MachinePool{} },
+			func(obj client.Object) string { return obj.(*expv1.MachinePool).Spec.ClusterName },
+			r,
+		))
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}

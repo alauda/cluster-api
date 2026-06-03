@@ -39,6 +39,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/internal/util/ssa"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
@@ -108,7 +109,13 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 				predicates.ClusterPausedTransitions(mgr.GetScheme(), predicateLog),
 			)),
 			// TODO: should this wait for Cluster.Status.InfrastructureReady similar to Infra Machine resources?
-		).Complete(r)
+		).Complete(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+		mgr.GetAPIReader(),
+		"machinedeployment",
+		func() client.Object { return &clusterv1.MachineDeployment{} },
+		func(obj client.Object) string { return obj.(*clusterv1.MachineDeployment).Spec.ClusterName },
+		r,
+	))
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}

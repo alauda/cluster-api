@@ -49,6 +49,7 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/internal/hooks"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -122,7 +123,7 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 	c, err := b.
 		WithOptions(options).
 		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), predicateLog, r.WatchFilterValue)).
-		Build(r)
+		Build(standby.WrapClusterReconcilerWithConfigMapDetector(mgr.GetAPIReader(), "cluster", r))
 
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")

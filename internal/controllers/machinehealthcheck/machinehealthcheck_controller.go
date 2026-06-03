@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/internal/controllers/machine"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -118,7 +119,13 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 			),
 		).
 		WatchesRawSource(r.ClusterCache.GetClusterSource("machinehealthcheck", r.clusterToMachineHealthCheck)).
-		Build(r)
+		Build(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+			mgr.GetAPIReader(),
+			"machinehealthcheck",
+			func() client.Object { return &clusterv1.MachineHealthCheck{} },
+			func(obj client.Object) string { return obj.(*clusterv1.MachineHealthCheck).Spec.ClusterName },
+			r,
+		))
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}
