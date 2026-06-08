@@ -53,6 +53,7 @@ import (
 	"sigs.k8s.io/cluster-api/internal/controllers/machinedeployment/mdutil"
 	topologynames "sigs.k8s.io/cluster-api/internal/topology/names"
 	"sigs.k8s.io/cluster-api/internal/util/ssa"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -148,7 +149,13 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 			),
 		).
 		WatchesRawSource(r.ClusterCache.GetClusterSource("machineset", clusterToMachineSets)).
-		Complete(r)
+		Complete(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+			mgr.GetAPIReader(),
+			"machineset",
+			func() client.Object { return &clusterv1.MachineSet{} },
+			func(obj client.Object) string { return obj.(*clusterv1.MachineSet).Spec.ClusterName },
+			r,
+		))
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}

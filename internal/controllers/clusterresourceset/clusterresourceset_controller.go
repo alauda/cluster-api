@@ -44,6 +44,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	resourcepredicates "sigs.k8s.io/cluster-api/internal/controllers/clusterresourceset/predicates"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
@@ -66,6 +67,9 @@ type Reconciler struct {
 	Client       client.Client
 	ClusterCache clustercache.ClusterCache
 
+	// StandbyDetector detects if the management cluster is in standby mode.
+	StandbyDetector standby.Detector
+
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
 }
@@ -73,6 +77,9 @@ type Reconciler struct {
 func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options, partialSecretCache cache.Cache) error {
 	if r.Client == nil || r.ClusterCache == nil {
 		return errors.New("Client and ClusterCache must not be nil")
+	}
+	if r.StandbyDetector == nil {
+		r.StandbyDetector = standby.NewConfigMapDetector(mgr.GetAPIReader())
 	}
 
 	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "clusterresourceset")
@@ -181,10 +188,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 		})
 		return ctrl.Result{}, err
 	}
+	clusters, skippedNonGlobalClusters, err := r.filterClustersForStandby(ctx, clusters)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	// Handle deletion reconciliation loop.
 	if !clusterResourceSet.ObjectMeta.DeletionTimestamp.IsZero() {
-		return ctrl.Result{}, r.reconcileDelete(ctx, clusters, clusterResourceSet)
+		return r.reconcileDelete(ctx, clusters, clusterResourceSet, skippedNonGlobalClusters)
 	}
 
 	errs := []error{}
@@ -219,7 +230,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 }
 
 // reconcileDelete removes the deleted ClusterResourceSet from all the ClusterResourceSetBindings it is added to.
-func (r *Reconciler) reconcileDelete(ctx context.Context, clusters []*clusterv1.Cluster, crs *addonsv1.ClusterResourceSet) error {
+func (r *Reconciler) reconcileDelete(ctx context.Context, clusters []*clusterv1.Cluster, crs *addonsv1.ClusterResourceSet, skippedNonGlobalClusters bool) (ctrl.Result, error) {
 	for _, cluster := range clusters {
 		log := ctrl.LoggerFrom(ctx, "Cluster", klog.KObj(cluster))
 
@@ -230,16 +241,20 @@ func (r *Reconciler) reconcileDelete(ctx context.Context, clusters []*clusterv1.
 		}
 		if err := r.Client.Get(ctx, clusterResourceSetBindingKey, clusterResourceSetBinding); err != nil {
 			if !apierrors.IsNotFound(err) {
-				return errors.Wrapf(err, "failed to get ClusterResourceSetBinding during ClusterResourceSet deletion")
+				return ctrl.Result{}, errors.Wrapf(err, "failed to get ClusterResourceSetBinding during ClusterResourceSet deletion")
+			}
+			if skippedNonGlobalClusters {
+				logSkipRemoveFinalizerForStandby(ctx, crs)
+				return ctrl.Result{RequeueAfter: standby.RequeueAfter}, nil
 			}
 			controllerutil.RemoveFinalizer(crs, addonsv1.ClusterResourceSetFinalizer)
-			return nil
+			return ctrl.Result{}, nil
 		}
 
 		// Initialize the patch helper.
 		patchHelper, err := patch.NewHelper(clusterResourceSetBinding, r.Client)
 		if err != nil {
-			return err
+			return ctrl.Result{}, err
 		}
 
 		clusterResourceSetBinding.RemoveBinding(crs)
@@ -256,12 +271,20 @@ func (r *Reconciler) reconcileDelete(ctx context.Context, clusters []*clusterv1.
 				log.Error(err, "Failed to delete empty ClusterResourceSetBinding")
 			}
 		} else if err := patchHelper.Patch(ctx, clusterResourceSetBinding); err != nil {
-			return err
+			return ctrl.Result{}, err
 		}
 	}
 
+	if skippedNonGlobalClusters {
+		logSkipRemoveFinalizerForStandby(ctx, crs)
+		return ctrl.Result{RequeueAfter: standby.RequeueAfter}, nil
+	}
 	controllerutil.RemoveFinalizer(crs, addonsv1.ClusterResourceSetFinalizer)
-	return nil
+	return ctrl.Result{}, nil
+}
+
+func logSkipRemoveFinalizerForStandby(ctx context.Context, crs *addonsv1.ClusterResourceSet) {
+	ctrl.LoggerFrom(ctx).Info("Refusing to remove ClusterResourceSet finalizer because management cluster is DR standby and non-global clusters were skipped", "ClusterResourceSet", klog.KObj(crs), "finalizer", addonsv1.ClusterResourceSetFinalizer, "globalCluster", standby.GlobalClusterName, "requeueAfter", standby.RequeueAfter)
 }
 
 // getClustersByClusterResourceSetSelector fetches Clusters matched by the ClusterResourceSet's label selector that are in the same namespace as the ClusterResourceSet object.
@@ -292,6 +315,30 @@ func (r *Reconciler) getClustersByClusterResourceSetSelector(ctx context.Context
 		}
 	}
 	return clusters, nil
+}
+
+func (r *Reconciler) filterClustersForStandby(ctx context.Context, clusters []*clusterv1.Cluster) ([]*clusterv1.Cluster, bool, error) {
+	if r.StandbyDetector == nil {
+		return clusters, false, nil
+	}
+	isStandby, err := r.StandbyDetector.IsStandby(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	if !isStandby {
+		return clusters, false, nil
+	}
+
+	filtered := []*clusterv1.Cluster{}
+	skippedNonGlobalClusters := false
+	for _, cluster := range clusters {
+		if cluster.Name == standby.GlobalClusterName {
+			filtered = append(filtered, cluster)
+			continue
+		}
+		skippedNonGlobalClusters = true
+	}
+	return filtered, skippedNonGlobalClusters, nil
 }
 
 // ApplyClusterResourceSet applies resources in a ClusterResourceSet to a Cluster. Once applied, a record will be added to the

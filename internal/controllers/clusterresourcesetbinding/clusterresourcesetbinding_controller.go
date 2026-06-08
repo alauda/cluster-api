@@ -34,6 +34,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/internal/hooks"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
@@ -64,7 +65,19 @@ func (r *Reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 		).
 		WithOptions(options).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(mgr.GetScheme(), predicateLog, r.WatchFilterValue)).
-		Complete(r)
+		Complete(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+			mgr.GetAPIReader(),
+			"clusterresourcesetbinding",
+			func() client.Object { return &addonsv1.ClusterResourceSetBinding{} },
+			func(obj client.Object) string {
+				binding := obj.(*addonsv1.ClusterResourceSetBinding)
+				if binding.Spec.ClusterName != "" {
+					return binding.Spec.ClusterName
+				}
+				return binding.Name
+			},
+			r,
+		))
 	if err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package clusterresourceset
 
 import (
+	"context"
 	"crypto/sha1" //nolint: gosec
 	"fmt"
 	"testing"
@@ -34,6 +35,7 @@ import (
 	addonsv1 "sigs.k8s.io/cluster-api/api/addons/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/internal/test/envtest"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
@@ -42,6 +44,91 @@ import (
 const (
 	timeout = time.Second * 15
 )
+
+type crsStandbyDetector struct {
+	standby bool
+	err     error
+}
+
+func (d crsStandbyDetector) IsStandby(context.Context) (bool, error) {
+	return d.standby, d.err
+}
+
+func TestFilterClustersForStandby(t *testing.T) {
+	testCases := []struct {
+		name            string
+		detector        standby.Detector
+		clusters        []*clusterv1.Cluster
+		expectedNames   []string
+		expectedSkipped bool
+		expectError     bool
+	}{
+		{
+			name:          "active returns all clusters",
+			detector:      crsStandbyDetector{},
+			clusters:      []*clusterv1.Cluster{{ObjectMeta: metav1.ObjectMeta{Name: standby.GlobalClusterName}}, {ObjectMeta: metav1.ObjectMeta{Name: "business"}}},
+			expectedNames: []string{standby.GlobalClusterName, "business"},
+		},
+		{
+			name:            "standby returns global cluster only",
+			detector:        crsStandbyDetector{standby: true},
+			clusters:        []*clusterv1.Cluster{{ObjectMeta: metav1.ObjectMeta{Name: standby.GlobalClusterName}}, {ObjectMeta: metav1.ObjectMeta{Name: "business"}}},
+			expectedNames:   []string{standby.GlobalClusterName},
+			expectedSkipped: true,
+		},
+		{
+			name:            "standby returns empty without global cluster",
+			detector:        crsStandbyDetector{standby: true},
+			clusters:        []*clusterv1.Cluster{{ObjectMeta: metav1.ObjectMeta{Name: "business"}}},
+			expectedNames:   []string{},
+			expectedSkipped: true,
+		},
+		{
+			name:        "detector error fails closed",
+			detector:    crsStandbyDetector{err: errors.New("detector error")},
+			clusters:    []*clusterv1.Cluster{{ObjectMeta: metav1.ObjectMeta{Name: standby.GlobalClusterName}}},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			r := &Reconciler{StandbyDetector: tc.detector}
+
+			clusters, skipped, err := r.filterClustersForStandby(context.Background(), tc.clusters)
+			if tc.expectError {
+				g.Expect(err).To(HaveOccurred())
+				return
+			}
+			g.Expect(err).NotTo(HaveOccurred())
+
+			clusterNames := []string{}
+			for _, cluster := range clusters {
+				clusterNames = append(clusterNames, cluster.Name)
+			}
+			g.Expect(clusterNames).To(Equal(tc.expectedNames))
+			g.Expect(skipped).To(Equal(tc.expectedSkipped))
+		})
+	}
+}
+
+func TestReconcileDeleteSkipsFinalizerRemovalForStandbySkippedClusters(t *testing.T) {
+	g := NewWithT(t)
+	clusterResourceSet := &addonsv1.ClusterResourceSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "crs",
+			Namespace:  metav1.NamespaceDefault,
+			Finalizers: []string{addonsv1.ClusterResourceSetFinalizer},
+		},
+	}
+	r := &Reconciler{}
+
+	res, err := r.reconcileDelete(context.Background(), nil, clusterResourceSet, true)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(res.RequeueAfter).To(Equal(standby.RequeueAfter))
+	g.Expect(clusterResourceSet.Finalizers).To(ContainElement(addonsv1.ClusterResourceSetFinalizer))
+}
 
 func TestClusterResourceSetReconciler(t *testing.T) {
 	var (
