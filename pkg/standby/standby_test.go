@@ -65,9 +65,6 @@ func (r *countingReconciler) Reconcile(context.Context, reconcile.Request) (reco
 
 func TestConfigMapDetectorIsStandby(t *testing.T) {
 	g := NewWithT(t)
-	oldNamespace := ConfigMapNamespace
-	ConfigMapNamespace = "cpaas-system"
-	defer func() { ConfigMapNamespace = oldNamespace }()
 
 	scheme := runtime.NewScheme()
 	g.Expect(corev1.AddToScheme(scheme)).To(Succeed())

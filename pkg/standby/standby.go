@@ -31,16 +31,13 @@ import (
 )
 
 const (
-	DefaultConfigMapNamespace = "cpaas-system"
-	ConfigMapName             = "etcd-sync"
-	DefaultRequeueAfter       = 30 * time.Second
-	GlobalClusterName         = "global"
+	ConfigMapNamespace  = "kube-public"
+	ConfigMapName       = "etcd-sync"
+	DefaultRequeueAfter = 30 * time.Second
+	GlobalClusterName   = "global"
 )
 
-var (
-	ConfigMapNamespace = DefaultConfigMapNamespace
-	RequeueAfter       = DefaultRequeueAfter
-)
+var RequeueAfter = DefaultRequeueAfter
 
 type Detector interface {
 	IsStandby(ctx context.Context) (bool, error)
