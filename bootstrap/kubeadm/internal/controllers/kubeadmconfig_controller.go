@@ -54,6 +54,7 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/internal/util/taints"
+	"sigs.k8s.io/cluster-api/pkg/standby"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
@@ -145,7 +146,13 @@ func (r *KubeadmConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 		),
 	).WatchesRawSource(r.ClusterCache.GetClusterSource("kubeadmconfig", r.ClusterToKubeadmConfigs))
 
-	if err := b.Complete(r); err != nil {
+	if err := b.Complete(standby.WrapClusterNamedReconcilerWithConfigMapDetector(
+		mgr.GetAPIReader(),
+		"kubeadmconfig",
+		func() client.Object { return &bootstrapv1.KubeadmConfig{} },
+		func(obj client.Object) string { return obj.GetLabels()[clusterv1.ClusterNameLabel] },
+		r,
+	)); err != nil {
 		return errors.Wrap(err, "failed setting up with a controller manager")
 	}
 	return nil
