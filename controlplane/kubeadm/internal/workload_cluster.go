@@ -70,6 +70,12 @@ var (
 	// the spec.clusterIP field selector that is only implemented in kube-apiserver >= 1.31.0).
 	minKubernetesVersionControlPlaneKubeletLocalMode = semver.MustParse("1.31.0")
 
+	// droppedKubernetesVersionControlPlaneKubeletLocalMode is the version from which
+	// we will drop the ControlPlaneKubeletLocalMode kubeadm feature gate.
+	// Starting with Kubernetes 1.36, this feature graduated to GA and the feature gate
+	// is no longer needed (and was removed from kubeadm).
+	droppedKubernetesVersionControlPlaneKubeletLocalMode = semver.MustParse("1.36.0")
+
 	// ErrControlPlaneMinNodes signals that a cluster doesn't meet the minimum required nodes
 	// to remove an etcd member.
 	ErrControlPlaneMinNodes = errors.New("cluster has fewer than 2 control plane nodes; removing an etcd member is not supported")
@@ -185,6 +191,9 @@ const (
 // DefaultFeatureGates defaults the feature gates field.
 func DefaultFeatureGates(kubeadmConfigSpec *bootstrapv1.KubeadmConfigSpec, kubernetesVersion semver.Version) {
 	if version.Compare(kubernetesVersion, minKubernetesVersionControlPlaneKubeletLocalMode, version.WithoutPreReleases()) < 0 {
+		return
+	}
+	if !kubernetesVersion.LT(droppedKubernetesVersionControlPlaneKubeletLocalMode) {
 		return
 	}
 
