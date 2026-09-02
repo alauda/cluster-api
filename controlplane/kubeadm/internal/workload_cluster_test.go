@@ -1261,6 +1261,44 @@ func TestUpdateFeatureGatesInKubeadmConfigMap(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "it should not add ControlPlaneKubeletLocalMode feature gate for 1.36.0",
+			clusterConfigurationData: utilyaml.Raw(`
+					apiVersion: kubeadm.k8s.io/v1beta4
+					kind: ClusterConfiguration`),
+			kubernetesVersion: semver.MustParse("1.36.0"),
+			newClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+				FeatureGates: nil,
+			},
+			wantClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "kubeadm.k8s.io/v1beta4",
+					Kind:       "ClusterConfiguration",
+				},
+				FeatureGates: nil,
+			},
+		},
+		{
+			name: "it should preserve other feature gates for 1.36.0",
+			clusterConfigurationData: utilyaml.Raw(`
+					apiVersion: kubeadm.k8s.io/v1beta4
+					kind: ClusterConfiguration`),
+			kubernetesVersion: semver.MustParse("1.36.0"),
+			newClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+				FeatureGates: map[string]bool{
+					"EtcdLearnerMode": true,
+				},
+			},
+			wantClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "kubeadm.k8s.io/v1beta4",
+					Kind:       "ClusterConfiguration",
+				},
+				FeatureGates: map[string]bool{
+					"EtcdLearnerMode": true,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1309,6 +1347,24 @@ func TestDefaultFeatureGates(t *testing.T) {
 		{
 			name:              "don't default ControlPlaneKubeletLocalMode for 1.30",
 			kubernetesVersion: semver.MustParse("1.30.99"),
+			kubeadmConfigSpec: &bootstrapv1.KubeadmConfigSpec{
+				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+					FeatureGates: map[string]bool{
+						"EtcdLearnerMode": true,
+					},
+				},
+			},
+			wantKubeadmConfigSpec: &bootstrapv1.KubeadmConfigSpec{
+				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+					FeatureGates: map[string]bool{
+						"EtcdLearnerMode": true,
+					},
+				},
+			},
+		},
+		{
+			name:              "don't default ControlPlaneKubeletLocalMode for 1.36",
+			kubernetesVersion: semver.MustParse("1.36.0"),
 			kubeadmConfigSpec: &bootstrapv1.KubeadmConfigSpec{
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 					FeatureGates: map[string]bool{
