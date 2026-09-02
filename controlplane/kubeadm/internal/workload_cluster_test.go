@@ -994,14 +994,10 @@ func TestUpdateFeatureGatesInKubeadmConfigMap(t *testing.T) {
 					apiVersion: kubeadm.k8s.io/v1beta4
 					kind: ClusterConfiguration`),
 			kubernetesVersion: semver.MustParse("1.36.0"),
-			newClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+			newClusterConfiguration: bootstrapv1.ClusterConfiguration{
 				FeatureGates: nil,
 			},
-			wantClusterConfiguration: &bootstrapv1.ClusterConfiguration{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "kubeadm.k8s.io/v1beta4",
-					Kind:       "ClusterConfiguration",
-				},
+			wantClusterConfiguration: bootstrapv1.ClusterConfiguration{
 				FeatureGates: nil,
 			},
 		},
@@ -1011,16 +1007,12 @@ func TestUpdateFeatureGatesInKubeadmConfigMap(t *testing.T) {
 					apiVersion: kubeadm.k8s.io/v1beta4
 					kind: ClusterConfiguration`),
 			kubernetesVersion: semver.MustParse("1.36.0"),
-			newClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+			newClusterConfiguration: bootstrapv1.ClusterConfiguration{
 				FeatureGates: map[string]bool{
 					"EtcdLearnerMode": true,
 				},
 			},
-			wantClusterConfiguration: &bootstrapv1.ClusterConfiguration{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "kubeadm.k8s.io/v1beta4",
-					Kind:       "ClusterConfiguration",
-				},
+			wantClusterConfiguration: bootstrapv1.ClusterConfiguration{
 				FeatureGates: map[string]bool{
 					"EtcdLearnerMode": true,
 				},
@@ -1152,14 +1144,14 @@ func TestDefaultFeatureGates(t *testing.T) {
 			name:              "don't default ControlPlaneKubeletLocalMode for 1.36",
 			kubernetesVersion: semver.MustParse("1.36.0"),
 			kubeadmConfigSpec: &bootstrapv1.KubeadmConfigSpec{
-				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+				ClusterConfiguration: bootstrapv1.ClusterConfiguration{
 					FeatureGates: map[string]bool{
 						"EtcdLearnerMode": true,
 					},
 				},
 			},
 			wantKubeadmConfigSpec: &bootstrapv1.KubeadmConfigSpec{
-				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+				ClusterConfiguration: bootstrapv1.ClusterConfiguration{
 					FeatureGates: map[string]bool{
 						"EtcdLearnerMode": true,
 					},
